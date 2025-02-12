@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:confetti/confetti.dart';
+import 'dart:math';
+import 'dart:async';
 
 void main() {
   runApp(const MyApp());
@@ -7,119 +10,214 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Valentine\'s Effects',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const EffectsPage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class EffectsPage extends StatefulWidget {
+  const EffectsPage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<EffectsPage> createState() => _EffectsPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _EffectsPageState extends State<EffectsPage> with TickerProviderStateMixin {
+  late ConfettiController _confettiController;
+  final List<FloatingObject> _floatingObjects = [];
+  late Timer _timer;
+  final List<Color> _balloonColors = [
+    Colors.red,
+    Colors.pink,
+    Colors.purple,
+    Colors.blueAccent,
+    Colors.green,
+  ];
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+  @override
+  void initState() {
+    super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 1));
+    
+    // Create floating objects every second
+    _timer = Timer.periodic(const Duration(milliseconds: 1000), (timer) {
+      if (_floatingObjects.length < 30) { // Limit the total number of objects
+        setState(() {
+          // Add a heart
+          if (Random().nextBool()) {
+            _floatingObjects.add(FloatingObject(
+              x: Random().nextDouble() * 300,
+              y: MediaQuery.of(context).size.height,
+              isHeart: true,
+              color: Colors.red,
+            ));
+          } 
+          // Add a balloon
+          else {
+            _floatingObjects.add(FloatingObject(
+              x: Random().nextDouble() * 300,
+              y: MediaQuery.of(context).size.height,
+              isHeart: false,
+              color: _balloonColors[Random().nextInt(_balloonColors.length)],
+            ));
+          }
+        });
+      }
     });
   }
 
   @override
+  void dispose() {
+    _confettiController.dispose();
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    // Update floating objects position
+    for (var object in _floatingObjects) {
+      object.y -= 2; // Move upward
+      object.x += sin(object.y / 30) * 2; // Add wavy motion
+    }
+
+    // Remove objects that are off screen
+    _floatingObjects.removeWhere((object) => object.y < -50);
+
     return Scaffold(
+      backgroundColor: Colors.pink[50],
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: const Text('Valentine\'s Effects'),
+        backgroundColor: Colors.red[100],
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+      body: Stack(
+        children: [
+          // Floating objects
+          ..._floatingObjects.map((object) => Positioned(
+                left: object.x,
+                top: object.y,
+                child: object.isHeart
+                    ? Icon(
+                        Icons.favorite,
+                        color: object.color,
+                        size: 30,
+                      )
+                    : CustomPaint(
+                        size: const Size(40, 50),
+                        painter: BalloonPainter(color: object.color),
+                      ),
+              )),
+          
+          // Confetti
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirection: pi / 2,
+              maxBlastForce: 5,
+              minBlastForce: 2,
+              emissionFrequency: 0.05,
+              numberOfParticles: 50,
+              gravity: 0.1,
+              shouldLoop: false,
+              colors: const [
+                Colors.red,
+                Colors.pink,
+                Colors.white,
+                Colors.purple,
+              ],
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+          ),
+
+          // Center button
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    _confettiController.play();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[400],
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 15,
+                    ),
+                  ),
+                  child: const Text(
+                    'Celebrate Love!',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
+}
+
+class FloatingObject {
+  double x;
+  double y;
+  bool isHeart;
+  Color color;
+  FloatingObject({
+    required this.x, 
+    required this.y, 
+    required this.isHeart,
+    required this.color,
+  });
+}
+
+class BalloonPainter extends CustomPainter {
+  final Color color;
+
+  BalloonPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    // Draw balloon
+    final balloonPath = Path()
+      ..moveTo(size.width / 2, size.height / 4)
+      ..addOval(Rect.fromCircle(
+        center: Offset(size.width / 2, size.height / 4),
+        radius: size.width / 2,
+      ));
+
+    // Draw string
+    final stringPaint = Paint()
+      ..color = color
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    final stringPath = Path()
+      ..moveTo(size.width / 2, size.height / 2)
+      ..quadraticBezierTo(
+        size.width / 2 - 10,
+        size.height * 0.7,
+        size.width / 2,
+        size.height,
+      );
+
+    canvas.drawPath(balloonPath, paint);
+    canvas.drawPath(stringPath, stringPaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
