@@ -100,6 +100,11 @@ class _EffectsPageState extends State<EffectsPage> with TickerProviderStateMixin
       ),
       body: Stack(
         children: [
+          //Center(
+            Image.asset(
+              'assets/images/heart.png'
+            ),
+          //),
           // Floating objects
           ..._floatingObjects.map((object) => Positioned(
                 left: object.x,
